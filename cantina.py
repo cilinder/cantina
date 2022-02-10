@@ -11,7 +11,8 @@ class Node:
         self.name = name
         self.neighbors = []
         self.onStack = False
-        self.visited = False
+        self.checked = False
+        self.parent = self
         self.component = -1
 
 
@@ -23,7 +24,7 @@ class Node:
 
     def next(self):
         for nb in self.neighbors:
-            if not nb.visited:
+            if not nb.dest.checked and not nb.visited:
                 return nb
         return None
 
@@ -35,35 +36,42 @@ class Graph:
         return str(self.nodes)
 
     def stronglyConnectedComponents(self):
-        node = self.nodes[0]
-        node.parent = 0
-        node.onStack = True
-        node.component = 0
-        self.scc(node)
+        n = len(self.nodes)
+        for i in range(n):
+            node = self.nodes[i]
+            if not node.checked:
+                node.onStack = True
+                node.component = i
+                self.scc(node)
+        components = [0 for i in range(n)]
+        for i in range(n):
+            components[self.nodes[i].component]+=1
+        return max(components)
 
     def scc(self, node):
-        node.visited = True
         node.onStack = True
-        nb = node.next()
-        if not nb: return
-        nb.visited = True
-        next = nb.dest
-        if next.onStack:
-            if next.component <= node.component:
-                node.onStack = False
-                nextComp = next.component
-                node.component = nextComp
-                par = node.parent
-                while par != next:
-                    par.onStack = False
-                    par.component = nextComp
-                    par = par.parent
-        else:
-            next.parent = node
-            if next.component < 0:
-                next.component = node.component+1
+        maxComp = node.component
+        while node.next():
+            nb = node.next()
+            nb.visited = True
+            next = nb.dest
+            if next.onStack:
+                if next.component <= node.component:
+                    nextComp = next.component
+                    node.component = nextComp
+                    par = node.parent
+                    while par != next:
+                        par.component = nextComp
+                        par = par.parent
+            else:
+                next.parent = node
+                if next.component < 0:
+                    next.component = maxComp+1
+                maxComp = self.scc(next)
 
-        self.scc(next)
+        node.onStack = False
+        node.checked = True
+        return node.component
 
 
 n = int(input())
@@ -95,5 +103,4 @@ for i in range(n):
         if i != u:
             node.neighbors.append(Conn(G.nodes[u]))
 
-G.stronglyConnectedComponents()
-print(G)
+print(n - G.stronglyConnectedComponents())
