@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import connected_components
 
 class Conn:
     def __init__(self, node) -> None:
@@ -46,7 +48,11 @@ class Graph:
         components = [0 for i in range(n)]
         for i in range(n):
             components[self.nodes[i].component]+=1
-        return max(components)
+        comps = 0
+        for c in components:
+            if c != 0:
+                comps+=1
+        return comps
 
     def scc(self, node):
         node.onStack = True
@@ -78,6 +84,7 @@ n = int(input())
 languages = set()
 cantina = []
 G = Graph()
+adjacencyMatrix = np.zeros((n,n))
 for i in range(n):
     member = input().split()
     cantina.append(member[1:])
@@ -100,7 +107,14 @@ for i in range(n):
     speaks = languages[cantina[i][0]]
     node = G.nodes[i]
     for u in understands[speaks]:
+        adjacencyMatrix[i,u] = 1
         if i != u:
             node.neighbors.append(Conn(G.nodes[u]))
 
-print(n - G.stronglyConnectedComponents())
+G_sparse = csr_matrix(adjacencyMatrix)
+n_components, labels = connected_components(csgraph=G_sparse, directed=True, connection='strong', return_labels=True)
+print(n_components)
+# print(labels)
+G.adjacencyMatrix = G_sparse
+print(G.stronglyConnectedComponents())
+print("----------")
